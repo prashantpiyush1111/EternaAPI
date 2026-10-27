@@ -3,12 +3,15 @@ package me.hapyl.eterna.module.command;
 import com.google.common.collect.Maps;
 import me.hapyl.eterna.module.annotate.CaughtExceptions;
 import me.hapyl.eterna.module.annotate.ForceLowercase;
+import me.hapyl.eterna.module.command.completer.Completer;
 import me.hapyl.eterna.module.command.completer.CompleterHandler;
 import me.hapyl.eterna.module.command.completer.CompleterMethod;
+import me.hapyl.eterna.module.command.completer.CompleterTooltip;
 import me.hapyl.eterna.module.util.Cooldown;
 import me.hapyl.eterna.module.util.Handle;
+import me.hapyl.eterna.module.util.TypeConverter;
 import me.hapyl.eterna.module.util.Validate;
-import org.bukkit.command.Command;
+import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permission;
@@ -22,27 +25,29 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Represents a {@link Command} builder.
+ * Represents a {@link org.bukkit.command.Command} builder.
  *
- * <p>Commands made via {@link SimpleCommand} must be registered via {@link CommandProcessor} and they do not require declaring them in {@code plugin.yml}.</p>
+ * <p>Commands made via {@link SimpleCommand} must be registered via {@link CommandProcessor}
+ * and they do not require declaring them in {@code plugin.yml}.</p>
  */
-public abstract class SimpleCommand implements Handle<Command>, Cooldown {
-    
+public abstract class SimpleCommand implements Handle<org.bukkit.command.Command>, Cooldown {
+
     private final String name;
     private final Map<Integer, CompleterHandler> completerHandlers;
     private final CommandCooldown cooldown;
-    
+
     @Nullable private Permission permission;
     @NotNull private String description;
     @NotNull private String usage;
     @NotNull private String[] aliases;
-    
+
     private boolean allowOnlyOp;
     private boolean allowOnlyPlayer;
-    
-    private CommandHandle handle;
+
+    private boolean registered;
+    private org.bukkit.command.Command handle;
     private CommandFormatter formatter;
-    
+
     /**
      * Creates a new {@link SimpleCommand}.
      *
@@ -60,7 +65,7 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
         this.completerHandlers = Maps.newHashMap();
         this.formatter = CommandFormatter.DEFAULT;
     }
-    
+
     /**
      * Sends the command usage to the given {@link CommandSender} via {@link CommandFormatter}.
      *
@@ -69,7 +74,7 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
     public void sendCommandUsage(@NotNull CommandSender sender) {
         formatter.invalidUsage(sender, usage);
     }
-    
+
     /**
      * Gets the {@link CompleterMethod} for this command.
      *
@@ -79,19 +84,21 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
     public CompleterMethod completerMethod() {
         return CompleterMethod.STARTS_WITH;
     }
-    
+
     /**
      * Gets the handle of this command.
      *
      * @return the handle of this command.
      * @throws NullPointerException if the command has not yet been registered.
+     * @deprecated Paper's lifecycle command registrar does not expose a Bukkit Command handle.
      */
     @NotNull
     @Override
-    public Command getHandle() {
-        return Objects.requireNonNull(handle, "Unregistered command! (%s)".formatted(name));
+    @Deprecated
+    public org.bukkit.command.Command getHandle() {
+        return Objects.requireNonNull(handle, "Paper commands do not expose a Bukkit Command handle (%s)".formatted(name));
     }
-    
+
     /**
      * Sets the {@link CompleterHandler} for a given {@code index}.
      *
@@ -100,7 +107,7 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
     public void setCompleterHandler(@NotNull CompleterHandler handler) {
         this.completerHandlers.put(handler.index(), handler);
     }
-    
+
     /**
      * Sets the tab-completer values for the given {@code index}.
      *
@@ -111,7 +118,7 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
     public void setCompleterValues(int index, @NotNull String... values) {
         this.completerHandlers.put(index, CompleterHandler.builder(index).values(Arrays.asList(Validate.varargs(values))).build());
     }
-    
+
     /**
      * Gets a {@link CompleterHandler} for the given {@code index}.
      *
@@ -122,7 +129,7 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
     public CompleterHandler getCompleterHandler(int index) {
         return completerHandlers.get(index);
     }
-    
+
     /**
      * Gets whether this command is only allowed for {@link Player}.
      *
@@ -131,7 +138,7 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
     public boolean isAllowOnlyPlayer() {
         return allowOnlyPlayer;
     }
-    
+
     /**
      * Sets whether this command is only allowed for {@link Player}.
      *
@@ -140,7 +147,7 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
     public void setAllowOnlyPlayer(boolean allowOnlyPlayer) {
         this.allowOnlyPlayer = allowOnlyPlayer;
     }
-    
+
     /**
      * Gets whether this command is only allowed for operators.
      *
@@ -149,7 +156,7 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
     public boolean isAllowOnlyOp() {
         return allowOnlyOp;
     }
-    
+
     /**
      * Sets whether this command is only allowed for operators.
      *
@@ -158,7 +165,7 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
     public void setAllowOnlyOp(boolean bool) {
         this.allowOnlyOp = bool;
     }
-    
+
     /**
      * Gets the command cooldown.
      *
@@ -168,7 +175,7 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
     public int getCooldown() {
         return this.cooldown.getCooldown();
     }
-    
+
     /**
      * Sets the command cooldown, in ticks.
      *
@@ -178,7 +185,7 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
     public void setCooldown(int cooldown) {
         this.cooldown.setCooldown(cooldown);
     }
-    
+
     /**
      * Gets the {@link CommandCooldown}.
      *
@@ -188,7 +195,7 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
     public CommandCooldown getCommandCooldown() {
         return this.cooldown;
     }
-    
+
     /**
      * Gets the description of this command.
      *
@@ -198,7 +205,7 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
     public String getDescription() {
         return this.description;
     }
-    
+
     /**
      * Sets the description of this command.
      *
@@ -207,7 +214,7 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
     public void setDescription(@NotNull String description) {
         this.description = description;
     }
-    
+
     /**
      * Gets the name of this command.
      *
@@ -217,10 +224,9 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
     public String getName() {
         return name;
     }
-    
+
     /**
      * Gets the {@link Permission} for this command.
-     * <p>Players within the permission cannot execute the command and are shown an error message.</p>
      *
      * @return the permission for this command, or {@code null} if unset.
      */
@@ -228,17 +234,16 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
     public Permission getPermission() {
         return permission;
     }
-    
+
     /**
      * Sets the {@link Permission} for this command.
-     * <p>Players within the permission cannot execute the command and are shown an error message.</p>
      *
      * @param permission - The permission to set.
      */
     public void setPermission(@Nullable Permission permission) {
         this.permission = permission;
     }
-    
+
     /**
      * Gets a copy of command aliases.
      *
@@ -248,19 +253,19 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
     public String[] getAliases() {
         return Arrays.copyOf(aliases, aliases.length);
     }
-    
+
     /**
      * Sets the command aliases.
      *
-     * @param aliases - The aliases to set.
+     * @param aliases - The command aliases.
      * @throws IllegalArgumentException if varargs are empty.
      */
     public void setAliases(@NotNull String... aliases) {
         this.aliases = Arrays.stream(Validate.varargs(aliases))
-                             .map(String::toLowerCase)
-                             .toArray(String[]::new);
+                .map(String::toLowerCase)
+                .toArray(String[]::new);
     }
-    
+
     /**
      * Gets the command usage.
      *
@@ -270,16 +275,16 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
     public String getUsage() {
         return usage;
     }
-    
+
     /**
      * Sets the command usage.
      *
-     * @param usage - The usage to set.
+     * @param usage - The command usage.
      */
     public void setUsage(@NotNull String usage) {
         this.usage = usage;
     }
-    
+
     /**
      * Gets the {@link CommandFormatter}.
      *
@@ -289,16 +294,16 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
     public CommandFormatter getFormatter() {
         return formatter;
     }
-    
+
     /**
      * Sets the {@link CommandFormatter}.
      *
-     * @param formatter - The formatter to set.
+     * @param formatter - The command formatter.
      */
     public void setFormatter(@NotNull CommandFormatter formatter) {
         this.formatter = formatter;
     }
-    
+
     /**
      * Attempts to execute this command for the given {@link CommandSender}.
      *
@@ -307,41 +312,140 @@ public abstract class SimpleCommand implements Handle<Command>, Cooldown {
      */
     @CaughtExceptions
     public abstract void execute(@NotNull CommandSender sender, @NotNull ArgumentList args);
-    
+
     /**
-     * Gets a {@link List} of available tab completions.
-     *
-     * <p>
-     * When checking for {@link ArgumentList#length}, mind that empty an argument counts as an argument, meaning to check for the first argument,
-     * you'd have to check for {@code length == 1}, since it can <u>never</u> be {@code 0}.
-     * </p>
+     * Gets a list of available tab completions.
      *
      * @param sender - The command sender.
      * @param args   - The command arguments.
      * @return a list of tab completions.
-     * @see CompleterHandler
      */
     @NotNull
     public List<String> tabComplete(@NotNull CommandSender sender, @NotNull ArgumentList args) {
         return List.of();
     }
-    
+
     /**
-     * Creates the command handle.
+     * Checks whether the given sender may execute or receive suggestions for this command.
+     *
+     * @param sender - The command sender.
+     * @return true if the sender passes the command restrictions and permission checks.
+     */
+    public final boolean canExecute(@NotNull CommandSender sender) {
+        return (!allowOnlyPlayer || sender instanceof Player)
+                && (!allowOnlyOp || sender.isOp())
+                && (permission == null || sender.hasPermission(permission));
+    }
+
+    /**
+     * Executes the command while preserving EternaAPI's legacy command checks and error formatting.
+     *
+     * @param sender - The command sender.
+     * @param args - The command arguments.
+     */
+    @ApiStatus.Internal
+    public final void executeSafely(@NotNull CommandSender sender, @NotNull ArgumentList args) {
+        if (this instanceof DisabledCommand) {
+            formatter.disabledCommand(sender);
+            return;
+        }
+
+        if (allowOnlyPlayer && !(sender instanceof Player)) {
+            formatter.playerOnlyCommand(sender);
+            return;
+        }
+
+        if ((allowOnlyOp && !sender.isOp()) || (permission != null && !sender.hasPermission(permission))) {
+            formatter.noPermissions(sender);
+            return;
+        }
+
+        if (sender instanceof Player player && cooldown.getCooldown() > 0) {
+            if (cooldown.isOnCooldown(player)) {
+                formatter.onCooldown(player, cooldown.getCooldown(player));
+                return;
+            }
+
+            if (!cooldown.canIgnoreCooldown(player)) {
+                cooldown.startCooldown(player);
+            }
+        }
+
+        try {
+            execute(sender, args);
+        }
+        catch (Exception ex) {
+            formatter.executionError(sender, ex);
+            throw me.hapyl.eterna.EternaLogger.acknowledgeException(ex);
+        }
+    }
+
+    /**
+     * Calculates tab completions while applying permissions, completer handlers and tooltips.
+     *
+     * @param sender - The command sender.
+     * @param args - The command arguments.
+     * @return available tab completions.
+     */
+    @ApiStatus.Internal
+    @NotNull
+    public final List<String> tabCompleteSafely(@NotNull CommandSender sender, @NotNull ArgumentList args) {
+        if (!canExecute(sender) || (this instanceof DisabledCommand)) {
+            return List.of();
+        }
+
+        final List<String> completerList = com.google.common.collect.Lists.newArrayList(tabComplete(sender, args));
+        final int argumentIndex = args.length - 1;
+
+        if (argumentIndex < 0) {
+            return completerList;
+        }
+
+        final String lastArgument = args.getString(argumentIndex);
+        final CompleterHandler completerHandler = getCompleterHandler(argumentIndex);
+        final List<String> tooltipList = com.google.common.collect.Lists.newArrayList();
+
+        if (completerHandler != null) {
+            final List<Completer> completers = completerHandler.handle();
+
+            completers.forEach(completer -> completerList.addAll(completer.complete(sender, args, argumentIndex)));
+
+            final CompleterTooltip tooltip = completerHandler.tooltip();
+            if (tooltip != null) {
+                tooltipList.add(tooltip.apply(TypeConverter.fromNullable(lastArgument)));
+            }
+        }
+
+        completerList.removeIf(value -> !completerMethod().apply(value, lastArgument));
+        completerList.addAll(tooltipList);
+
+        return completerList.stream()
+                .map(value -> ChatColor.translateAlternateColorCodes('&', String.valueOf(value)))
+                .toList();
+    }
+
+    /**
+     * Marks this command as registered.
+     */
+    @ApiStatus.Internal
+    public final void markRegistered() {
+        if (registered) {
+            throw new IllegalStateException("Command already registered! (%s)".formatted(name));
+        }
+        registered = true;
+    }
+
+    /**
+     * Creates a Bukkit command handle for compatibility with the old API.
      *
      * @return the command handle.
+     * @deprecated Paper's lifecycle command registrar does not expose a Bukkit Command handle.
      */
     @NotNull
     @ApiStatus.Internal
-    final Command createCommand() {
-        if (this.handle == null) {
-            this.handle = new CommandHandle(this);
-        }
-        else {
-            throw new IllegalStateException("Command already registered! (%s)".formatted(name));
-        }
-        
-        return this.handle;
+    @Deprecated
+    public final org.bukkit.command.Command createCommand() {
+        throw new UnsupportedOperationException("Bukkit Command handles are no longer created; use Paper's BasicCommand API.");
     }
-    
+
 }
