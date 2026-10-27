@@ -1,7 +1,9 @@
 package me.hapyl.eterna.module.command;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import me.hapyl.eterna.module.annotate.CaughtExceptions;
+import me.hapyl.eterna.EternaLogger;
 import me.hapyl.eterna.module.annotate.ForceLowercase;
 import me.hapyl.eterna.module.command.completer.Completer;
 import me.hapyl.eterna.module.command.completer.CompleterHandler;
@@ -219,6 +221,7 @@ public abstract class SimpleCommand implements Cooldown {
 
     /**
      * Gets the {@link Permission} for this command.
+     * <p>Players within the permission cannot execute the command and are shown an error message.</p>
      *
      * @return the permission for this command, or {@code null} if unset.
      */
@@ -229,6 +232,7 @@ public abstract class SimpleCommand implements Cooldown {
 
     /**
      * Sets the {@link Permission} for this command.
+     * <p>Players within the permission cannot execute the command and are shown an error message.</p>
      *
      * @param permission - The permission to set.
      */
@@ -306,11 +310,17 @@ public abstract class SimpleCommand implements Cooldown {
     public abstract void execute(@NotNull CommandSender sender, @NotNull ArgumentList args);
 
     /**
-     * Gets a list of available tab completions.
+     * Gets a {@link List} of available tab completions.
+     *
+     * <p>
+     * When checking for {@link ArgumentList#length}, mind that an empty argument counts as an argument, meaning to check for the first argument,
+     * you'd have to check for {@code length == 1}, since it can <u>never</u> be {@code 0}.
+     * </p>
      *
      * @param sender - The command sender.
      * @param args   - The command arguments.
      * @return a list of tab completions.
+     * @see CompleterHandler
      */
     @NotNull
     public List<String> tabComplete(@NotNull CommandSender sender, @NotNull ArgumentList args) {
@@ -368,7 +378,7 @@ public abstract class SimpleCommand implements Cooldown {
         }
         catch (Exception ex) {
             formatter.executionError(sender, ex);
-            throw me.hapyl.eterna.EternaLogger.acknowledgeException(ex);
+            throw EternaLogger.acknowledgeException(ex);
         }
     }
 
@@ -382,16 +392,16 @@ public abstract class SimpleCommand implements Cooldown {
     @ApiStatus.Internal
     @NotNull
     public final List<String> tabCompleteSafely(@NotNull CommandSender sender, @NotNull ArgumentList args) {
+        if (args.length == 0) {
+            args = ArgumentList.create(new String[] { "" });
+        }
+
         if (!canExecute(sender) || (this instanceof DisabledCommand)) {
             return List.of();
         }
 
-        final List<String> completerList = com.google.common.collect.Lists.newArrayList(tabComplete(sender, args));
+        final List<String> completerList = Lists.newArrayList(tabComplete(sender, args));
         final int argumentIndex = args.length - 1;
-
-        if (argumentIndex < 0) {
-            return completerList;
-        }
 
         final String lastArgument = args.getString(argumentIndex);
         final CompleterHandler completerHandler = getCompleterHandler(argumentIndex);
