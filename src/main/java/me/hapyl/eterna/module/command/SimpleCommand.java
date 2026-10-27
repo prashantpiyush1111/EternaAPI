@@ -258,7 +258,7 @@ public abstract class SimpleCommand implements Cooldown {
      */
     public void setAliases(@NotNull String... aliases) {
         this.aliases = Arrays.stream(Validate.varargs(aliases))
-                .map(String::toLowerCase)
+                             .map(String::toLowerCase)
                              .toArray(String[]::new);
     }
     
@@ -421,7 +421,7 @@ public abstract class SimpleCommand implements Cooldown {
     
         return completerList.stream()
                 .map(value -> ChatColor.translateAlternateColorCodes('&', String.valueOf(value)))
-                            .toList();
+                .toList();
     }
     
     /**
