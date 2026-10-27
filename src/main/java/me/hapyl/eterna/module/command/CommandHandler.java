@@ -3,7 +3,6 @@ package me.hapyl.eterna.module.command;
 import me.hapyl.eterna.EternaKey;
 import me.hapyl.eterna.EternaKeyed;
 import me.hapyl.eterna.EternaLogger;
-import me.hapyl.eterna.module.command.completer.CompleterTooltip;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TranslatableComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -16,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents a command listener that prevents a kick for sending invalid characters in chat {@code §}.
- * <p>It's packaged here to prevent kick for tabbing the {@link CompleterTooltip}.</p>
+ * <p>It's packaged here to prevent kicks caused by invalid command suggestion characters.</p>
  */
 @ApiStatus.Internal
 public final class CommandHandler extends EternaKeyed implements Listener {
