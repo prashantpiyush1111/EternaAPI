@@ -1,5 +1,5 @@
 package me.hapyl.eterna.module.command;
-    
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import me.hapyl.eterna.EternaLogger;
@@ -19,11 +19,11 @@ import org.bukkit.permissions.Permission;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-    
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-    
+
 /**
  * Represents a {@link org.bukkit.command.Command} builder.
  *
@@ -351,28 +351,28 @@ public abstract class SimpleCommand implements Cooldown {
             formatter.disabledCommand(sender);
             return;
         }
-    
+        
         if (allowOnlyPlayer && !(sender instanceof Player)) {
             formatter.playerOnlyCommand(sender);
             return;
         }
-    
+        
         if ((allowOnlyOp && !sender.isOp()) || (permission != null && !sender.hasPermission(permission))) {
             formatter.noPermissions(sender);
             return;
         }
-    
+        
         if (sender instanceof Player player && cooldown.getCooldown() > 0) {
             if (cooldown.isOnCooldown(player)) {
                 formatter.onCooldown(player, cooldown.getCooldown(player));
                 return;
             }
-    
+            
             if (!cooldown.canIgnoreCooldown(player)) {
                 cooldown.startCooldown(player);
             }
         }
-    
+        
         try {
             execute(sender, args);
         }
@@ -393,35 +393,35 @@ public abstract class SimpleCommand implements Cooldown {
     @NotNull
     public final List<String> tabCompleteSafely(@NotNull CommandSender sender, @NotNull ArgumentList args) {
         final ArgumentList normalizedArgs = args.length == 0 ? ArgumentList.create(new String[] { "" }) : args;
-    
+        
         if (!canExecute(sender) || (this instanceof DisabledCommand)) {
             return List.of();
         }
-    
+        
         final List<String> completerList = Lists.newArrayList(tabComplete(sender, normalizedArgs));
         final int argumentIndex = normalizedArgs.length - 1;
-    
+        
         final String lastArgument = normalizedArgs.getString(argumentIndex);
         final CompleterHandler completerHandler = getCompleterHandler(argumentIndex);
         final List<String> tooltipList = Lists.newArrayList();
-    
+        
         if (completerHandler != null) {
             final List<Completer> completers = completerHandler.handle();
-    
+            
             completers.forEach(completer -> completerList.addAll(completer.complete(sender, normalizedArgs, argumentIndex)));
-    
+            
             final CompleterTooltip tooltip = completerHandler.tooltip();
             if (tooltip != null) {
                 tooltipList.add(tooltip.apply(TypeConverter.fromNullable(lastArgument)));
             }
         }
-    
+        
         completerList.removeIf(value -> !completerMethod().apply(value, lastArgument));
         completerList.addAll(tooltipList);
-    
+        
         return completerList.stream()
-                .map(value -> ChatColor.translateAlternateColorCodes('&', String.valueOf(value)))
-                .toList();
+                            .map(value -> ChatColor.translateAlternateColorCodes('&', String.valueOf(value)))
+                            .toList();
     }
     
     /**
