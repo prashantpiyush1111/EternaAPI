@@ -2,22 +2,19 @@ package me.hapyl.eterna.module.command;
 
 import com.google.common.collect.Maps;
 import io.papermc.paper.command.brigadier.BasicCommand;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
-import me.hapyl.eterna.EternaLogger;
 import me.hapyl.eterna.module.util.Compute;
-import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * Represents a {@link SimpleCommand} processor, which is used to register commands.
+ * Registers {@link SimpleCommand} instances using Paper's lifecycle command API.
  *
- * <p>Commands are registered through Paper's lifecycle command registrar, allowing
- * Paper to rebuild the command tree when required.</p>
+ * <p>Paper handles command registration and rebuilding when the server reloads.</p>
  */
 public class CommandProcessor {
 
@@ -26,54 +23,44 @@ public class CommandProcessor {
     private final Plugin plugin;
 
     /**
-     * Creates a new {@link CommandProcessor} with the given plugin as delegate.
+     * Creates a new command processor for the given plugin.
      *
-     * @param plugin - The plugin delegate.
+     * @param plugin - The plugin registering commands.
      */
     public CommandProcessor(@NotNull Plugin plugin) {
         this.plugin = plugin;
     }
 
     /**
-     * Registers the given {@link SimpleCommand}.
+     * Registers the given command.
      *
      * @param simpleCommand - The command to register.
      */
     public void registerCommand(@NotNull SimpleCommand simpleCommand) {
-        this.registerCommands(simpleCommand);
+        registerCommands(simpleCommand);
     }
 
     /**
-     * Registers the given {@link SimpleCommand} varargs, in the exact order passed.
+     * Registers commands in the exact order supplied.
      *
      * @param commands - The commands to register.
-     * @throws IllegalArgumentException if no commands are passed.
+     * @throws IllegalArgumentException if no commands are supplied.
      */
     public void registerCommands(@NotNull SimpleCommand... commands) {
         if (commands.length == 0) {
             throw new IllegalArgumentException("There must be at least one command!");
         }
 
-        final List<SimpleCommand> registeredCommands = List.of(commands);
+        final List<SimpleCommand> commandsToRegister = List.of(commands);
 
-        for (final SimpleCommand command : registeredCommands) {
-            if (command == null) {
-                throw new IllegalArgumentException("Commands cannot contain null elements!");
-            }
+        commandsToRegister.forEach(SimpleCommand::markRegistered);
 
-            command.markRegistered();
-        }
-
-        COMMANDS_BY_PLUGIN.compute(plugin, (ignored, existing) -> {
-            final List<SimpleCommand> updated = existing == null ? Maps.newArrayList() : existing;
-            updated.addAll(registeredCommands);
-            return updated;
-        });
+        COMMANDS_BY_PLUGIN.compute(plugin, Compute.listAddAll(commandsToRegister));
 
         plugin.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             final var registrar = event.registrar();
 
-            for (final SimpleCommand command : registeredCommands) {
+            for (final SimpleCommand command : commandsToRegister) {
                 registrar.register(
                         command.getName(),
                         command.getDescription(),
@@ -84,48 +71,30 @@ public class CommandProcessor {
         });
     }
 
-    @ApiStatus.Internal
-    private static final class SimpleCommandAdapter implements BasicCommand {
-
-        private final SimpleCommand command;
-
-        private SimpleCommandAdapter(@NotNull SimpleCommand command) {
-            this.command = command;
-        }
-
-        @Override
-        public boolean canUse(@NotNull CommandSender sender) {
-            return command.canExecute(sender);
-        }
-
-        @Override
-        public void execute(
-                @NotNull io.papermc.paper.command.brigadier.CommandSourceStack source,
-                @NotNull String[] args
-        ) {
-            command.executeSafely(source.getSender(), ArgumentList.create(args));
-        }
-
-        @Override
-        @NotNull
-        public List<String> suggest(
-                @NotNull io.papermc.paper.command.brigadier.CommandSourceStack source,
-                @NotNull String[] args
-        ) {
-            return command.tabCompleteSafely(source.getSender(), ArgumentList.create(args));
-        }
-    }
-
     /**
-     * Gets an immutable view of all the {@link SimpleCommand} registered by the given {@link Plugin}.
+     * Gets an immutable view of the commands registered by the given plugin.
      *
      * @param plugin - The plugin.
-     * @return an immutable view of all commands registered by the plugin.
+     * @return an immutable command list.
      */
     @NotNull
     public static List<SimpleCommand> getCommands(@NotNull Plugin plugin) {
         final List<SimpleCommand> commands = COMMANDS_BY_PLUGIN.get(plugin);
 
         return commands != null ? List.copyOf(commands) : List.of();
+    }
+
+    private record SimpleCommandAdapter(SimpleCommand command) implements BasicCommand {
+
+        @Override
+        public void execute(@NotNull CommandSourceStack source, @NotNull String[] args) {
+            command.executeSafely(source.getSender(), ArgumentList.create(args));
+        }
+
+        @Override
+        @NotNull
+        public List<String> suggest(@NotNull CommandSourceStack source, @NotNull String[] args) {
+            return command.tabCompleteSafely(source.getSender(), ArgumentList.create(args));
+        }
     }
 }
