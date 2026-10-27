@@ -8,7 +8,6 @@ import me.hapyl.eterna.module.command.completer.CompleterHandler;
 import me.hapyl.eterna.module.command.completer.CompleterMethod;
 import me.hapyl.eterna.module.command.completer.CompleterTooltip;
 import me.hapyl.eterna.module.util.Cooldown;
-import me.hapyl.eterna.module.util.Handle;
 import me.hapyl.eterna.module.util.TypeConverter;
 import me.hapyl.eterna.module.util.Validate;
 import org.bukkit.ChatColor;
@@ -22,7 +21,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Represents a {@link org.bukkit.command.Command} builder.
@@ -30,7 +28,7 @@ import java.util.Objects;
  * <p>Commands made via {@link SimpleCommand} must be registered via {@link CommandProcessor}
  * and they do not require declaring them in {@code plugin.yml}.</p>
  */
-public abstract class SimpleCommand implements Handle<org.bukkit.command.Command>, Cooldown {
+public abstract class SimpleCommand implements Cooldown {
 
     private final String name;
     private final Map<Integer, CompleterHandler> completerHandlers;
@@ -45,7 +43,6 @@ public abstract class SimpleCommand implements Handle<org.bukkit.command.Command
     private boolean allowOnlyPlayer;
 
     private boolean registered;
-    private org.bukkit.command.Command handle;
     private CommandFormatter formatter;
 
     /**
@@ -86,17 +83,12 @@ public abstract class SimpleCommand implements Handle<org.bukkit.command.Command
     }
 
     /**
-     * Gets the handle of this command.
+     * Gets whether this command has been registered.
      *
-     * @return the handle of this command.
-     * @throws NullPointerException if the command has not yet been registered.
-     * @deprecated Paper's lifecycle command registrar does not expose a Bukkit Command handle.
+     * @return true if this command has been registered.
      */
-    @NotNull
-    @Override
-    @Deprecated
-    public org.bukkit.command.Command getHandle() {
-        return Objects.requireNonNull(handle, "Paper commands do not expose a Bukkit Command handle (%s)".formatted(name));
+    public final boolean isRegistered() {
+        return registered;
     }
 
     /**
@@ -433,19 +425,6 @@ public abstract class SimpleCommand implements Handle<org.bukkit.command.Command
             throw new IllegalStateException("Command already registered! (%s)".formatted(name));
         }
         registered = true;
-    }
-
-    /**
-     * Creates a Bukkit command handle for compatibility with the old API.
-     *
-     * @return the command handle.
-     * @deprecated Paper's lifecycle command registrar does not expose a Bukkit Command handle.
-     */
-    @NotNull
-    @ApiStatus.Internal
-    @Deprecated
-    public final org.bukkit.command.Command createCommand() {
-        throw new UnsupportedOperationException("Bukkit Command handles are no longer created; use Paper's BasicCommand API.");
     }
 
 }
