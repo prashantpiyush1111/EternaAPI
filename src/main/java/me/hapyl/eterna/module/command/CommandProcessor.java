@@ -1,10 +1,8 @@
 package me.hapyl.eterna.module.command;
 
-import com.google.common.collect.Maps;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
-import me.hapyl.eterna.module.util.Compute;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,7 +16,7 @@ import java.util.Map;
  */
 public class CommandProcessor {
 
-    private static final Map<Plugin, List<SimpleCommand>> COMMANDS_BY_PLUGIN = Maps.newHashMap();
+    private static final Map<Plugin, List<SimpleCommand>> COMMANDS_BY_PLUGIN = new java.util.HashMap<>();
 
     private final Plugin plugin;
 
@@ -55,7 +53,11 @@ public class CommandProcessor {
 
         commandsToRegister.forEach(SimpleCommand::markRegistered);
 
-        COMMANDS_BY_PLUGIN.compute(plugin, Compute.listAddAll(commandsToRegister));
+        COMMANDS_BY_PLUGIN.compute(plugin, (ignored, existing) -> {
+            final List<SimpleCommand> updated = existing == null ? new java.util.ArrayList<>() : existing;
+            updated.addAll(commandsToRegister);
+            return updated;
+        });
 
         plugin.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             final var registrar = event.registrar();
