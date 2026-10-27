@@ -6,15 +6,16 @@ import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
-import java.util.Map;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Registers {@link SimpleCommand} instances using Paper's lifecycle command API.
  *
- * <p>Paper handles command registration and rebuilding when the server reloads.</p>
+ * <p>Commands must be registered during the plugin's {@code onEnable()} method. Paper's
+ * lifecycle command registrar is only available during plugin enable.</p>
  */
 public class CommandProcessor {
 
@@ -45,6 +46,7 @@ public class CommandProcessor {
      *
      * @param commands - The commands to register.
      * @throws IllegalArgumentException if no commands are supplied.
+     * @throws IllegalStateException if called outside the plugin enable lifecycle phase.
      */
     public void registerCommands(@NotNull SimpleCommand... commands) {
         if (commands.length == 0) {
@@ -53,15 +55,14 @@ public class CommandProcessor {
 
         final List<SimpleCommand> commandsToRegister = List.of(commands);
 
-        commandsToRegister.forEach(SimpleCommand::markRegistered);
+        for (final SimpleCommand command : commandsToRegister) {
+            if (command.isRegistered()) {
+                throw new IllegalStateException("Command already registered! (%s)".formatted(command.getName()));
+            }
+        }
 
-        COMMANDS_BY_PLUGIN.compute(plugin, (ignored, existing) -> {
-            final List<SimpleCommand> updated = existing == null ? new ArrayList<>() : existing;
-            updated.addAll(commandsToRegister);
-            return updated;
-        });
-
-        plugin.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
+        try {
+            plugin.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             final var registrar = event.registrar();
 
             for (final SimpleCommand command : commandsToRegister) {
@@ -72,6 +73,21 @@ public class CommandProcessor {
                         new SimpleCommandAdapter(command)
                 );
             }
+            });
+        }
+        catch (IllegalStateException ex) {
+            throw new IllegalStateException(
+                    "Commands must be registered during the plugin's onEnable() method!",
+                    ex
+            );
+        }
+
+        commandsToRegister.forEach(SimpleCommand::markRegistered);
+
+        COMMANDS_BY_PLUGIN.compute(plugin, (ignored, existing) -> {
+            final List<SimpleCommand> updated = existing == null ? new ArrayList<>() : existing;
+            updated.addAll(commandsToRegister);
+            return updated;
         });
     }
 
@@ -91,6 +107,11 @@ public class CommandProcessor {
     private record SimpleCommandAdapter(SimpleCommand command) implements BasicCommand {
 
         @Override
+        public boolean canUse(@NotNull org.bukkit.command.CommandSender sender) {
+            return command instanceof DisabledCommand || command.canExecute(sender);
+        }
+
+        @Override
         public void execute(@NotNull CommandSourceStack source, @NotNull String[] args) {
             command.executeSafely(source.getSender(), ArgumentList.create(args));
         }
@@ -98,7 +119,8 @@ public class CommandProcessor {
         @Override
         @NotNull
         public List<String> suggest(@NotNull CommandSourceStack source, @NotNull String[] args) {
-            return command.tabCompleteSafely(source.getSender(), ArgumentList.create(args));
+            final String[] normalizedArgs = args.length == 0 ? new String[] { "" } : args;
+            return command.tabCompleteSafely(source.getSender(), ArgumentList.create(normalizedArgs));
         }
     }
 }
