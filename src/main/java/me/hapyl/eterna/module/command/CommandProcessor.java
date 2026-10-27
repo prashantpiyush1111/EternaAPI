@@ -8,6 +8,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * Registers {@link SimpleCommand} instances using Paper's lifecycle command API.
@@ -16,7 +18,7 @@ import java.util.Map;
  */
 public class CommandProcessor {
 
-    private static final Map<Plugin, List<SimpleCommand>> COMMANDS_BY_PLUGIN = new java.util.HashMap<>();
+    private static final Map<Plugin, List<SimpleCommand>> COMMANDS_BY_PLUGIN = new HashMap<>();
 
     private final Plugin plugin;
 
@@ -54,7 +56,7 @@ public class CommandProcessor {
         commandsToRegister.forEach(SimpleCommand::markRegistered);
 
         COMMANDS_BY_PLUGIN.compute(plugin, (ignored, existing) -> {
-            final List<SimpleCommand> updated = existing == null ? new java.util.ArrayList<>() : existing;
+            final List<SimpleCommand> updated = existing == null ? new ArrayList<>() : existing;
             updated.addAll(commandsToRegister);
             return updated;
         });
