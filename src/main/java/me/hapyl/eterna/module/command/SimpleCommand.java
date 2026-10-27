@@ -1,9 +1,9 @@
 package me.hapyl.eterna.module.command;
-
+    
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import me.hapyl.eterna.module.annotate.CaughtExceptions;
 import me.hapyl.eterna.EternaLogger;
+import me.hapyl.eterna.module.annotate.CaughtExceptions;
 import me.hapyl.eterna.module.annotate.ForceLowercase;
 import me.hapyl.eterna.module.command.completer.Completer;
 import me.hapyl.eterna.module.command.completer.CompleterHandler;
@@ -19,11 +19,11 @@ import org.bukkit.permissions.Permission;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
+    
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
+    
 /**
  * Represents a {@link org.bukkit.command.Command} builder.
  *
@@ -31,22 +31,22 @@ import java.util.Map;
  * and they do not require declaring them in {@code plugin.yml}.</p>
  */
 public abstract class SimpleCommand implements Cooldown {
-
+    
     private final String name;
     private final Map<Integer, CompleterHandler> completerHandlers;
     private final CommandCooldown cooldown;
-
+    
     @Nullable private Permission permission;
     @NotNull private String description;
     @NotNull private String usage;
     @NotNull private String[] aliases;
-
+    
     private boolean allowOnlyOp;
     private boolean allowOnlyPlayer;
-
+    
     private boolean registered;
     private CommandFormatter formatter;
-
+    
     /**
      * Creates a new {@link SimpleCommand}.
      *
@@ -64,7 +64,7 @@ public abstract class SimpleCommand implements Cooldown {
         this.completerHandlers = Maps.newHashMap();
         this.formatter = CommandFormatter.DEFAULT;
     }
-
+    
     /**
      * Sends the command usage to the given {@link CommandSender} via {@link CommandFormatter}.
      *
@@ -73,7 +73,7 @@ public abstract class SimpleCommand implements Cooldown {
     public void sendCommandUsage(@NotNull CommandSender sender) {
         formatter.invalidUsage(sender, usage);
     }
-
+    
     /**
      * Gets the {@link CompleterMethod} for this command.
      *
@@ -83,7 +83,7 @@ public abstract class SimpleCommand implements Cooldown {
     public CompleterMethod completerMethod() {
         return CompleterMethod.STARTS_WITH;
     }
-
+    
     /**
      * Gets whether this command has been registered.
      *
@@ -92,7 +92,7 @@ public abstract class SimpleCommand implements Cooldown {
     public final boolean isRegistered() {
         return registered;
     }
-
+    
     /**
      * Sets the {@link CompleterHandler} for a given {@code index}.
      *
@@ -101,7 +101,7 @@ public abstract class SimpleCommand implements Cooldown {
     public void setCompleterHandler(@NotNull CompleterHandler handler) {
         this.completerHandlers.put(handler.index(), handler);
     }
-
+    
     /**
      * Sets the tab-completer values for the given {@code index}.
      *
@@ -112,7 +112,7 @@ public abstract class SimpleCommand implements Cooldown {
     public void setCompleterValues(int index, @NotNull String... values) {
         this.completerHandlers.put(index, CompleterHandler.builder(index).values(Arrays.asList(Validate.varargs(values))).build());
     }
-
+    
     /**
      * Gets a {@link CompleterHandler} for the given {@code index}.
      *
@@ -123,7 +123,7 @@ public abstract class SimpleCommand implements Cooldown {
     public CompleterHandler getCompleterHandler(int index) {
         return completerHandlers.get(index);
     }
-
+    
     /**
      * Gets whether this command is only allowed for {@link Player}.
      *
@@ -132,7 +132,7 @@ public abstract class SimpleCommand implements Cooldown {
     public boolean isAllowOnlyPlayer() {
         return allowOnlyPlayer;
     }
-
+    
     /**
      * Sets whether this command is only allowed for {@link Player}.
      *
@@ -141,7 +141,7 @@ public abstract class SimpleCommand implements Cooldown {
     public void setAllowOnlyPlayer(boolean allowOnlyPlayer) {
         this.allowOnlyPlayer = allowOnlyPlayer;
     }
-
+    
     /**
      * Gets whether this command is only allowed for operators.
      *
@@ -150,7 +150,7 @@ public abstract class SimpleCommand implements Cooldown {
     public boolean isAllowOnlyOp() {
         return allowOnlyOp;
     }
-
+    
     /**
      * Sets whether this command is only allowed for operators.
      *
@@ -159,7 +159,7 @@ public abstract class SimpleCommand implements Cooldown {
     public void setAllowOnlyOp(boolean bool) {
         this.allowOnlyOp = bool;
     }
-
+    
     /**
      * Gets the command cooldown.
      *
@@ -169,7 +169,7 @@ public abstract class SimpleCommand implements Cooldown {
     public int getCooldown() {
         return this.cooldown.getCooldown();
     }
-
+    
     /**
      * Sets the command cooldown, in ticks.
      *
@@ -179,7 +179,7 @@ public abstract class SimpleCommand implements Cooldown {
     public void setCooldown(int cooldown) {
         this.cooldown.setCooldown(cooldown);
     }
-
+    
     /**
      * Gets the {@link CommandCooldown}.
      *
@@ -189,7 +189,7 @@ public abstract class SimpleCommand implements Cooldown {
     public CommandCooldown getCommandCooldown() {
         return this.cooldown;
     }
-
+    
     /**
      * Gets the description of this command.
      *
@@ -199,7 +199,7 @@ public abstract class SimpleCommand implements Cooldown {
     public String getDescription() {
         return this.description;
     }
-
+    
     /**
      * Sets the description of this command.
      *
@@ -208,7 +208,7 @@ public abstract class SimpleCommand implements Cooldown {
     public void setDescription(@NotNull String description) {
         this.description = description;
     }
-
+    
     /**
      * Gets the name of this command.
      *
@@ -218,7 +218,7 @@ public abstract class SimpleCommand implements Cooldown {
     public String getName() {
         return name;
     }
-
+    
     /**
      * Gets the {@link Permission} for this command.
      * <p>Players within the permission cannot execute the command and are shown an error message.</p>
@@ -229,7 +229,7 @@ public abstract class SimpleCommand implements Cooldown {
     public Permission getPermission() {
         return permission;
     }
-
+    
     /**
      * Sets the {@link Permission} for this command.
      * <p>Players within the permission cannot execute the command and are shown an error message.</p>
@@ -239,7 +239,7 @@ public abstract class SimpleCommand implements Cooldown {
     public void setPermission(@Nullable Permission permission) {
         this.permission = permission;
     }
-
+    
     /**
      * Gets a copy of command aliases.
      *
@@ -249,7 +249,7 @@ public abstract class SimpleCommand implements Cooldown {
     public String[] getAliases() {
         return Arrays.copyOf(aliases, aliases.length);
     }
-
+    
     /**
      * Sets the command aliases.
      *
@@ -259,9 +259,9 @@ public abstract class SimpleCommand implements Cooldown {
     public void setAliases(@NotNull String... aliases) {
         this.aliases = Arrays.stream(Validate.varargs(aliases))
                 .map(String::toLowerCase)
-                .toArray(String[]::new);
+                             .toArray(String[]::new);
     }
-
+    
     /**
      * Gets the command usage.
      *
@@ -271,7 +271,7 @@ public abstract class SimpleCommand implements Cooldown {
     public String getUsage() {
         return usage;
     }
-
+    
     /**
      * Sets the command usage.
      *
@@ -280,7 +280,7 @@ public abstract class SimpleCommand implements Cooldown {
     public void setUsage(@NotNull String usage) {
         this.usage = usage;
     }
-
+    
     /**
      * Gets the {@link CommandFormatter}.
      *
@@ -290,7 +290,7 @@ public abstract class SimpleCommand implements Cooldown {
     public CommandFormatter getFormatter() {
         return formatter;
     }
-
+    
     /**
      * Sets the {@link CommandFormatter}.
      *
@@ -299,7 +299,7 @@ public abstract class SimpleCommand implements Cooldown {
     public void setFormatter(@NotNull CommandFormatter formatter) {
         this.formatter = formatter;
     }
-
+    
     /**
      * Attempts to execute this command for the given {@link CommandSender}.
      *
@@ -308,7 +308,7 @@ public abstract class SimpleCommand implements Cooldown {
      */
     @CaughtExceptions
     public abstract void execute(@NotNull CommandSender sender, @NotNull ArgumentList args);
-
+    
     /**
      * Gets a {@link List} of available tab completions.
      *
@@ -326,7 +326,7 @@ public abstract class SimpleCommand implements Cooldown {
     public List<String> tabComplete(@NotNull CommandSender sender, @NotNull ArgumentList args) {
         return List.of();
     }
-
+    
     /**
      * Checks whether the given sender may execute or receive suggestions for this command.
      *
@@ -338,7 +338,7 @@ public abstract class SimpleCommand implements Cooldown {
                 && (!allowOnlyOp || sender.isOp())
                 && (permission == null || sender.hasPermission(permission));
     }
-
+    
     /**
      * Executes the command while preserving EternaAPI's legacy command checks and error formatting.
      *
@@ -351,28 +351,28 @@ public abstract class SimpleCommand implements Cooldown {
             formatter.disabledCommand(sender);
             return;
         }
-
+    
         if (allowOnlyPlayer && !(sender instanceof Player)) {
             formatter.playerOnlyCommand(sender);
             return;
         }
-
+    
         if ((allowOnlyOp && !sender.isOp()) || (permission != null && !sender.hasPermission(permission))) {
             formatter.noPermissions(sender);
             return;
         }
-
+    
         if (sender instanceof Player player && cooldown.getCooldown() > 0) {
             if (cooldown.isOnCooldown(player)) {
                 formatter.onCooldown(player, cooldown.getCooldown(player));
                 return;
             }
-
+    
             if (!cooldown.canIgnoreCooldown(player)) {
                 cooldown.startCooldown(player);
             }
         }
-
+    
         try {
             execute(sender, args);
         }
@@ -381,7 +381,7 @@ public abstract class SimpleCommand implements Cooldown {
             throw EternaLogger.acknowledgeException(ex);
         }
     }
-
+    
     /**
      * Calculates tab completions while applying permissions, completer handlers and tooltips.
      *
@@ -392,40 +392,38 @@ public abstract class SimpleCommand implements Cooldown {
     @ApiStatus.Internal
     @NotNull
     public final List<String> tabCompleteSafely(@NotNull CommandSender sender, @NotNull ArgumentList args) {
-        if (args.length == 0) {
-            args = ArgumentList.create(new String[] { "" });
-        }
-
+        final ArgumentList normalizedArgs = args.length == 0 ? ArgumentList.create(new String[] { "" }) : args;
+    
         if (!canExecute(sender) || (this instanceof DisabledCommand)) {
             return List.of();
         }
-
-        final List<String> completerList = Lists.newArrayList(tabComplete(sender, args));
-        final int argumentIndex = args.length - 1;
-
-        final String lastArgument = args.getString(argumentIndex);
+    
+        final List<String> completerList = Lists.newArrayList(tabComplete(sender, normalizedArgs));
+        final int argumentIndex = normalizedArgs.length - 1;
+    
+        final String lastArgument = normalizedArgs.getString(argumentIndex);
         final CompleterHandler completerHandler = getCompleterHandler(argumentIndex);
-        final List<String> tooltipList = com.google.common.collect.Lists.newArrayList();
-
+        final List<String> tooltipList = Lists.newArrayList();
+    
         if (completerHandler != null) {
             final List<Completer> completers = completerHandler.handle();
-
-            completers.forEach(completer -> completerList.addAll(completer.complete(sender, args, argumentIndex)));
-
+    
+            completers.forEach(completer -> completerList.addAll(completer.complete(sender, normalizedArgs, argumentIndex)));
+    
             final CompleterTooltip tooltip = completerHandler.tooltip();
             if (tooltip != null) {
                 tooltipList.add(tooltip.apply(TypeConverter.fromNullable(lastArgument)));
             }
         }
-
+    
         completerList.removeIf(value -> !completerMethod().apply(value, lastArgument));
         completerList.addAll(tooltipList);
-
+    
         return completerList.stream()
                 .map(value -> ChatColor.translateAlternateColorCodes('&', String.valueOf(value)))
-                .toList();
+                            .toList();
     }
-
+    
     /**
      * Marks this command as registered.
      */
@@ -436,5 +434,5 @@ public abstract class SimpleCommand implements Cooldown {
         }
         registered = true;
     }
-
+    
 }
